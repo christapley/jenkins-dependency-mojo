@@ -15,8 +15,17 @@
  */
 package org.tapley.jenkins.maven.dependency.plugin.model;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 /**
  *
@@ -34,7 +43,33 @@ public class JenkinsClient {
         this.buildNumber = buildNumber;
     }
     
-    public List<String> getMatchingArtifactUrls(String artifactNameMatcher) {
+    protected String getJobApiJsonUrl() {
+        String url = String.format("%s/job/%s/%s/api/json", jenkinsUrl, jobName, buildNumber);
+        return url;
+    }
+    
+    protected String getStringFromInputStream(InputStream inputStream) throws IOException {
+        return IOUtils.toString(inputStream, "UTF8");
+    }
+    
+    protected InputStream performHttpGet(String url) throws IOException {
+        HttpClient client = new DefaultHttpClient();
+        HttpGet request = new HttpGet(url);
+        HttpResponse response = client.execute(request);
+        if(response.getStatusLine().getStatusCode() == 200) {
+            return response.getEntity().getContent();
+        }
+        throw new IllegalStateException(String.format("%s returned %d", url, response.getStatusLine().getStatusCode()));
+    }
+    
+    public List<String> getMatchingArtifactUrls(String artifactNameMatcher) throws IOException {
+        
+        String url = getJobApiJsonUrl();
+        InputStream jsonStream = performHttpGet(url);
+        String json = getStringFromInputStream(jsonStream);
+        
+	JsonParser parser = new JsonParser();
+        JsonElement rootElement = parser.parse(json);
         return null;
     }
     
