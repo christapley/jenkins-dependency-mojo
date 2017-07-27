@@ -68,7 +68,7 @@ public class JenkinsClient {
         InputStream jsonStream = performHttpGet(url);
         String json = getStringFromInputStream(jsonStream);
         
-	JsonParser parser = new JsonParser();
+		JsonParser parser = new JsonParser();
         JsonElement rootElement = parser.parse(json);
         return null;
     }

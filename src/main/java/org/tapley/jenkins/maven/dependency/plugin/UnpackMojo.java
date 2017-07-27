@@ -37,28 +37,13 @@ import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
  * @author Chris Tapley
  */
 @Mojo(name = "Unpack")
-public class UnpackMojo extends AbstractMojo {
-    
-    @Parameter(required=true)
-    String jenkinsUrl;
-    
-    @Parameter(required=true)
-    String jobName;
-    
-    @Parameter(defaultValue="lastSuccessfulBuild")
-    String buildNumber;
-    
-    @Parameter(required=true)
-    String buildArtifact;
+public class UnpackMojo extends JenkinsPluginAbstractMojo {
     
     @Parameter(defaultValue="**/**")
     String includes;
     
     @Parameter(required=false)
     String excludes;
-    
-    @Parameter(required=true)
-    String outputDirectory;
     
     protected File getTemporaryFile(String extension) throws IOException {
         return java.io.File.createTempFile(UUID.randomUUID().toString(), "." + extension);
@@ -76,21 +61,24 @@ public class UnpackMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         
         JenkinsClient jenkinsClient = new JenkinsClient(jenkinsUrl, jobName, buildNumber);
-        
-        List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
-        
-        getLog().info(String.format("Unpacking %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
-        
-        for(String url : matchingArtifactUrls) {
-            try {
-                getLog().info(String.format("Processing detected artifact url %s", url));
-                String extension = getFileExtension(url);
-                File archiveFile = getTemporaryFile(extension);
-                jenkinsClient.downloadArtifact(url, archiveFile);
-                unpack(archiveFile);
-            } catch (Exception ex) {
-                throw new MojoExecutionException("Failed to process artifact " + url, ex);
-            }
-        }
+        try {
+			List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
+
+			getLog().info(String.format("Unpacking %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
+
+			for(String url : matchingArtifactUrls) {
+				try {
+					getLog().info(String.format("Processing detected artifact url %s", url));
+					String extension = getFileExtension(url);
+					File archiveFile = getTemporaryFile(extension);
+					jenkinsClient.downloadArtifact(url, archiveFile);
+					unpack(archiveFile);
+				} catch (Exception ex) {
+					throw new MojoExecutionException("Failed to process artifact " + url, ex);
+				}
+			}
+		} catch(Exception ex) {
+			throw new MojoExecutionException("Failed to process artifacts", ex);
+		}
     }
 }
