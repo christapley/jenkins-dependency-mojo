@@ -23,18 +23,19 @@ import org.apache.maven.plugins.annotations.Parameter;
  * @author ctapley
  */
 public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
-	@Parameter(required=true)
+
+    @Parameter(required = true)
     String jenkinsUrl;
-    
-    @Parameter(required=true)
+
+    @Parameter(required = true)
     String jobName;
-    
-    @Parameter(defaultValue="lastSuccessfulBuild")
+
+    @Parameter(defaultValue = "lastSuccessfulBuild")
     String buildNumber;
-    
-    @Parameter(required=true)
+
+    @Parameter(required = true)
     String buildArtifact;
-	
-	@Parameter(required=true)
+
+    @Parameter(required = true)
     String outputDirectory;
 }

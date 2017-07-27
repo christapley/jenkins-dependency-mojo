@@ -38,85 +38,87 @@ import org.springframework.util.AntPathMatcher;
  * @author Chris Tapley
  */
 public class JenkinsClient {
-    
+
     String jenkinsUrl;
     String jobName;
     String buildNumber;
-	
-	AntPathMatcher pathMatcher;
-    
+
+    AntPathMatcher pathMatcher;
+
     public JenkinsClient(String jenkinsUrl, String jobName, String buildNumber) {
         this.jenkinsUrl = jenkinsUrl;
         this.jobName = jobName;
         this.buildNumber = buildNumber;
-		pathMatcher = new AntPathMatcher();
+        pathMatcher = new AntPathMatcher();
     }
-    
+
     protected String getJobApiJsonUrl() {
-        String url = String.format("%s/job/%s/%s/api/json", jenkinsUrl, jobName, buildNumber);
-        return url;
+        return String.format("%s/job/%s/%s/api/json", jenkinsUrl, jobName, buildNumber);
     }
-    
+
     protected String getStringFromInputStream(InputStream inputStream) throws IOException {
         return IOUtils.toString(inputStream, "UTF8");
     }
+
+    protected HttpClient getHttpClient() {
+        return new DefaultHttpClient();
+    }
     
     protected InputStream performHttpGet(String url) throws IOException {
-        HttpClient client = new DefaultHttpClient();
+        HttpClient client = getHttpClient();
         HttpGet request = new HttpGet(url);
         HttpResponse response = client.execute(request);
-        if(response.getStatusLine().getStatusCode() == 200) {
+        if (response.getStatusLine().getStatusCode() == 200) {
             return response.getEntity().getContent();
         }
         throw new IllegalStateException(String.format("%s returned %d", url, response.getStatusLine().getStatusCode()));
     }
-    
-	protected List<String> getArtifactPathsFromJenkins() throws IOException {
-		String url = getJobApiJsonUrl();
+
+    protected List<String> getArtifactPathsFromJenkins() throws IOException {
+        String url = getJobApiJsonUrl();
         InputStream jsonStream = performHttpGet(url);
         String json = getStringFromInputStream(jsonStream);
-        
-		List<String> artifactPaths = new ArrayList<>();
-		
-		JsonParser parser = new JsonParser();
+
+        List<String> artifactPaths = new ArrayList<>();
+
+        JsonParser parser = new JsonParser();
         JsonElement rootElement = parser.parse(json);
-		
-		JsonArray artifacts = rootElement.getAsJsonObject().getAsJsonArray("artifacts");
-		
-		for(JsonElement artifactElement : artifacts) {
-			if(artifactElement.getAsJsonObject().has("relativePath")) {
-				String artifactRelativePath = artifactElement.getAsJsonObject().get("relativePath").getAsString();
-				artifactPaths.add(artifactRelativePath);
-			}
-		}
-		return artifactPaths;
-	}
-	
-	protected String getUrlForArtifactRelativePath(String artifactRelativePath) {
-		String url = String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, jobName, buildNumber, artifactRelativePath);
+
+        JsonArray artifacts = rootElement.getAsJsonObject().getAsJsonArray("artifacts");
+
+        for (JsonElement artifactElement : artifacts) {
+            if (artifactElement.getAsJsonObject().has("relativePath")) {
+                String artifactRelativePath = artifactElement.getAsJsonObject().get("relativePath").getAsString();
+                artifactPaths.add(artifactRelativePath);
+            }
+        }
+        return artifactPaths;
+    }
+
+    protected String getUrlForArtifactRelativePath(String artifactRelativePath) {
+        String url = String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, jobName, buildNumber, artifactRelativePath);
         return url;
-	}
-	
+    }
+
     public List<String> getMatchingArtifactUrls(String artifactNameMatcher) throws IOException {
-        
-		List<String> matchingArtifactUrls = new ArrayList<>();
-		List<String> matchers = Arrays.asList(artifactNameMatcher.split(","));
-		
+
+        List<String> matchingArtifactUrls = new ArrayList<>();
+        List<String> matchers = Arrays.asList(artifactNameMatcher.split(","));
+
         List<String> artifactRelativePaths = getArtifactPathsFromJenkins();
-		for(String artifactRelativePath : artifactRelativePaths) {
-			for(String matcher : matchers) {
-				if(pathMatcher.match(matcher, artifactRelativePath)) {
-					matchingArtifactUrls.add(getUrlForArtifactRelativePath(artifactRelativePath));
-					break;
-				}
-			}
-		}
+        for (String artifactRelativePath : artifactRelativePaths) {
+            for (String matcher : matchers) {
+                if (pathMatcher.match(matcher, artifactRelativePath)) {
+                    matchingArtifactUrls.add(getUrlForArtifactRelativePath(artifactRelativePath));
+                    break;
+                }
+            }
+        }
         return matchingArtifactUrls;
     }
-    
+
     public void downloadArtifact(String artifactUrl, File outputFile) throws IOException {
         InputStream inputStream = performHttpGet(artifactUrl);
-		Files.copy(inputStream, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(inputStream, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
-        
 }

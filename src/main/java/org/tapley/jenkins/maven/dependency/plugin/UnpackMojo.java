@@ -38,47 +38,47 @@ import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
  */
 @Mojo(name = "Unpack")
 public class UnpackMojo extends JenkinsPluginAbstractMojo {
-    
-    @Parameter(defaultValue="**/**")
+
+    @Parameter(defaultValue = "**/**")
     String includes;
-    
-    @Parameter(required=false)
+
+    @Parameter(required = false)
     String excludes;
-    
+
     protected File getTemporaryFile(String extension) throws IOException {
         return java.io.File.createTempFile(UUID.randomUUID().toString(), "." + extension);
     }
-    
+
     protected String getFileExtension(String url) throws IOException {
         return FilenameUtils.getExtension(url);
     }
-    
+
     protected void unpack(File archive) {
-        
+
     }
-    
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        
+
         JenkinsClient jenkinsClient = new JenkinsClient(jenkinsUrl, jobName, buildNumber);
         try {
-			List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
+            List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
 
-			getLog().info(String.format("Unpacking %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
+            getLog().info(String.format("Unpacking %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
 
-			for(String url : matchingArtifactUrls) {
-				try {
-					getLog().info(String.format("Processing detected artifact url %s", url));
-					String extension = getFileExtension(url);
-					File archiveFile = getTemporaryFile(extension);
-					jenkinsClient.downloadArtifact(url, archiveFile);
-					unpack(archiveFile);
-				} catch (Exception ex) {
-					throw new MojoExecutionException("Failed to process artifact " + url, ex);
-				}
-			}
-		} catch(Exception ex) {
-			throw new MojoExecutionException("Failed to process artifacts", ex);
-		}
+            for (String url : matchingArtifactUrls) {
+                try {
+                    getLog().info(String.format("Processing detected artifact url %s", url));
+                    String extension = getFileExtension(url);
+                    File archiveFile = getTemporaryFile(extension);
+                    jenkinsClient.downloadArtifact(url, archiveFile);
+                    unpack(archiveFile);
+                } catch (Exception ex) {
+                    throw new MojoExecutionException("Failed to process artifact " + url, ex);
+                }
+            }
+        } catch (Exception ex) {
+            throw new MojoExecutionException("Failed to process artifacts", ex);
+        }
     }
 }
