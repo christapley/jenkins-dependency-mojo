@@ -15,17 +15,23 @@
  */
 package org.tapley.jenkins.maven.dependency.plugin.model;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.springframework.util.AntPathMatcher;
 
 /**
  *
@@ -36,11 +42,14 @@ public class JenkinsClient {
     String jenkinsUrl;
     String jobName;
     String buildNumber;
+	
+	AntPathMatcher pathMatcher;
     
     public JenkinsClient(String jenkinsUrl, String jobName, String buildNumber) {
         this.jenkinsUrl = jenkinsUrl;
         this.jobName = jobName;
         this.buildNumber = buildNumber;
+		pathMatcher = new AntPathMatcher();
     }
     
     protected String getJobApiJsonUrl() {
@@ -62,19 +71,52 @@ public class JenkinsClient {
         throw new IllegalStateException(String.format("%s returned %d", url, response.getStatusLine().getStatusCode()));
     }
     
-    public List<String> getMatchingArtifactUrls(String artifactNameMatcher) throws IOException {
-        
-        String url = getJobApiJsonUrl();
+	protected List<String> getArtifactPathsFromJenkins() throws IOException {
+		String url = getJobApiJsonUrl();
         InputStream jsonStream = performHttpGet(url);
         String json = getStringFromInputStream(jsonStream);
         
+		List<String> artifactPaths = new ArrayList<>();
+		
 		JsonParser parser = new JsonParser();
         JsonElement rootElement = parser.parse(json);
-        return null;
+		
+		JsonArray artifacts = rootElement.getAsJsonObject().getAsJsonArray("artifacts");
+		
+		for(JsonElement artifactElement : artifacts) {
+			if(artifactElement.getAsJsonObject().has("relativePath")) {
+				String artifactRelativePath = artifactElement.getAsJsonObject().get("relativePath").getAsString();
+				artifactPaths.add(artifactRelativePath);
+			}
+		}
+		return artifactPaths;
+	}
+	
+	protected String getUrlForArtifactRelativePath(String artifactRelativePath) {
+		String url = String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, jobName, buildNumber, artifactRelativePath);
+        return url;
+	}
+	
+    public List<String> getMatchingArtifactUrls(String artifactNameMatcher) throws IOException {
+        
+		List<String> matchingArtifactUrls = new ArrayList<>();
+		List<String> matchers = Arrays.asList(artifactNameMatcher.split(","));
+		
+        List<String> artifactRelativePaths = getArtifactPathsFromJenkins();
+		for(String artifactRelativePath : artifactRelativePaths) {
+			for(String matcher : matchers) {
+				if(pathMatcher.match(matcher, artifactRelativePath)) {
+					matchingArtifactUrls.add(getUrlForArtifactRelativePath(artifactRelativePath));
+					break;
+				}
+			}
+		}
+        return matchingArtifactUrls;
     }
     
-    public void downloadArtifact(String artifactUrl, File outputFile) {
-        
+    public void downloadArtifact(String artifactUrl, File outputFile) throws IOException {
+        InputStream inputStream = performHttpGet(artifactUrl);
+		Files.copy(inputStream, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
         
 }
