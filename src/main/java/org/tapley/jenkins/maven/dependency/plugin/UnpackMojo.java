@@ -54,7 +54,7 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
     }
 
     protected void unpack(File archive) {
-
+        
     }
 
     @Override

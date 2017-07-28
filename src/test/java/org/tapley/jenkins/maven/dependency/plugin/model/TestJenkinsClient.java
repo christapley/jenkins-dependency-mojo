@@ -16,8 +16,14 @@
 package org.tapley.jenkins.maven.dependency.plugin.model;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -25,14 +31,18 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -54,6 +64,9 @@ public class TestJenkinsClient {
     String expectedJobName = "expectedJobName";
     String expectedBuildNumber = "expectedBuildNumber";
     
+    File temporaryFile;
+    List<String> expectedArtifactRelativePaths;
+    
     @Mock
     HttpClient httpClient;
     
@@ -65,7 +78,27 @@ public class TestJenkinsClient {
         client = new JenkinsClient(expectedJenkinsUrl, expectedJobName, expectedBuildNumber);
         clientSpy = spy(client);
         
+        expectedArtifactRelativePaths = Arrays.asList( 
+            "cli-application-16.4.0-SNAPSHOT-windows-msvc120-x64.zip",
+            "debug-symbols-16.4.0-SNAPSHOT-windows-msvc120-x64.zip",
+            "FULL_VERSION",
+            "OEMLicense-16.4.0-SNAPSHOT-windows-msvc120-x64.zip",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/apollo-essentials-configuration-16.4.0-SNAPSHOT-windows-x64.zip",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/ERDASAPOLLOCore.exe",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/ERDASAPOLLOUtilities.exe",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/msm-16.4.0-SNAPSHOT-windows-msvc120-x64.zip"
+        );
+        
         MockitoAnnotations.initMocks(this);
+    }
+    
+    @After
+    public void fini() {
+        if(temporaryFile != null) {
+            if(temporaryFile.exists()) {
+                temporaryFile.delete();
+            }
+        }
     }
     
     @Test
@@ -130,5 +163,117 @@ public class TestJenkinsClient {
         when(httpEntity.getContent()).thenReturn(inputStream);
         
         assertEquals(jobResponse, IOUtils.toString(clientSpy.performHttpGet(expectedUrl)));
+    }
+    
+    private void compareAllRelativeArtifactPaths(List<String> actualArtifactRelativePaths) {
+        Collections.sort(expectedArtifactRelativePaths);
+        Collections.sort(actualArtifactRelativePaths);
+        assertEquals(expectedArtifactRelativePaths, actualArtifactRelativePaths);
+    }
+    
+    @Test
+    public void getArtifactPathsFromJenkins_ok() throws IOException {
+        String expectedUrl = "http://brewery.ingrnet.com/job/test/1/api/json";
+        InputStream inputStream = new ByteArrayInputStream(jobResponse.getBytes());
+        
+        doReturn(expectedUrl).when(clientSpy).getJobApiJsonUrl();
+        doReturn(inputStream).when(clientSpy).performHttpGet(expectedUrl);
+        
+        compareAllRelativeArtifactPaths(clientSpy.getArtifactPathsFromJenkins());
+    }
+    
+    @Test
+    public void getArtifactPathsFromJenkins_throws() throws IOException {
+        expectedException.expect(IOException.class);
+        
+        String expectedUrl = "http://brewery.ingrnet.com/job/test/1/api/json";
+        doReturn(expectedUrl).when(clientSpy).getJobApiJsonUrl();
+        doThrow(new IOException("Bang!")).when(clientSpy).performHttpGet(expectedUrl);
+        clientSpy.getArtifactPathsFromJenkins();
+    }
+    
+    @Test
+    public void getUrlForArtifactRelativePath_ok() {
+        String expectedArtifactRelativePath = "expectedArtifactRelativePath";
+        assertEquals(String.format("%s/job/%s/%s/artifact/%s", expectedJenkinsUrl, expectedJobName, expectedBuildNumber, expectedArtifactRelativePath), client.getUrlForArtifactRelativePath(expectedArtifactRelativePath));
+    }
+    
+    @Test
+    public void getMatchingArtifactUrls_all() throws IOException {
+        doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
+        doAnswer((Answer)(InvokationArguments) -> {
+            return (String)InvokationArguments.getArgumentAt(0, String.class);
+        }).when(clientSpy).getUrlForArtifactRelativePath(anyString());
+        compareAllRelativeArtifactPaths(clientSpy.getMatchingArtifactUrls("**/**"));
+    }
+    
+    @Test
+    public void getMatchingArtifactUrls_FULL_VERSION() throws IOException {
+        doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
+        doAnswer((Answer)(InvokationArguments) -> {
+            return (String)InvokationArguments.getArgumentAt(0, String.class);
+        }).when(clientSpy).getUrlForArtifactRelativePath(anyString());
+        
+        List<String> urls = clientSpy.getMatchingArtifactUrls("FULL_VERSION");
+        assertEquals(1, urls.size());
+        assertEquals("FULL_VERSION", urls.get(0));
+    }
+    
+    @Test
+    public void getMatchingArtifactUrls_ReleasePathMulti() throws IOException {
+        doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
+        doAnswer((Answer)(InvokationArguments) -> {
+            return (String)InvokationArguments.getArgumentAt(0, String.class);
+        }).when(clientSpy).getUrlForArtifactRelativePath(anyString());
+        
+        expectedArtifactRelativePaths = Arrays.asList( 
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/apollo-essentials-configuration-16.4.0-SNAPSHOT-windows-x64.zip",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/ERDASAPOLLOCore.exe",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/ERDASAPOLLOUtilities.exe",
+            "Release/Image_Web_Server_2016_MAppX_16_4/sources_iws/Master/msm-16.4.0-SNAPSHOT-windows-msvc120-x64.zip"
+        );
+        
+        compareAllRelativeArtifactPaths(clientSpy.getMatchingArtifactUrls("Release/**/*.zip, Release/**/*.exe"));
+    }
+    
+    @Test
+    public void getMatchingArtifactUrls_localZips() throws IOException {
+        doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
+        doAnswer((Answer)(InvokationArguments) -> {
+            return (String)InvokationArguments.getArgumentAt(0, String.class);
+        }).when(clientSpy).getUrlForArtifactRelativePath(anyString());
+        
+        expectedArtifactRelativePaths = Arrays.asList( 
+            "cli-application-16.4.0-SNAPSHOT-windows-msvc120-x64.zip",
+            "debug-symbols-16.4.0-SNAPSHOT-windows-msvc120-x64.zip",
+            "OEMLicense-16.4.0-SNAPSHOT-windows-msvc120-x64.zip"
+        );
+        
+        compareAllRelativeArtifactPaths(clientSpy.getMatchingArtifactUrls("*.zip"));
+    }
+    
+    @Test
+    public void getMatchingArtifactUrls_none() throws IOException {
+        doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
+        assertTrue(clientSpy.getMatchingArtifactUrls("").isEmpty());
+        assertTrue(clientSpy.getMatchingArtifactUrls("8wefh9aehf9a8hf98ahsd9f8h9ad8hf9").isEmpty());
+    }
+    
+    @Test
+    public void downloadArtifact_throws() throws IOException {
+        expectedException.expect(IOException.class);
+        String artifactUrl = "artifactUrl";
+        File outputFile = mock(File.class);
+        doThrow(new IOException("Bang!")).when(clientSpy).performHttpGet(artifactUrl);
+        clientSpy.downloadArtifact(artifactUrl, outputFile);
+    }
+    
+    @Test
+    public void downloadArtifact_ok() throws IOException {
+        String artifactUrl = "artifactUrl";
+        temporaryFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
+        doReturn(new ByteArrayInputStream(jobResponse.getBytes())).when(clientSpy).performHttpGet(artifactUrl);
+        clientSpy.downloadArtifact(artifactUrl, temporaryFile);
+        assertEquals(jobResponse, FileUtils.readFileToString(temporaryFile));
     }
 }

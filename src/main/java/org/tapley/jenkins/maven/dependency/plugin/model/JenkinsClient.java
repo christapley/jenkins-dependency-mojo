@@ -96,14 +96,13 @@ public class JenkinsClient {
     }
 
     protected String getUrlForArtifactRelativePath(String artifactRelativePath) {
-        String url = String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, jobName, buildNumber, artifactRelativePath);
-        return url;
+        return String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, jobName, buildNumber, artifactRelativePath);
     }
 
-    public List<String> getMatchingArtifactUrls(String artifactNameMatcher) throws IOException {
+    public List<String> getMatchingArtifactUrls(String commaSeparatedArtifactNameMatchers) throws IOException {
 
         List<String> matchingArtifactUrls = new ArrayList<>();
-        List<String> matchers = Arrays.asList(artifactNameMatcher.split(","));
+        List<String> matchers = Arrays.asList(commaSeparatedArtifactNameMatchers.split(","));
 
         List<String> artifactRelativePaths = getArtifactPathsFromJenkins();
         for (String artifactRelativePath : artifactRelativePaths) {
