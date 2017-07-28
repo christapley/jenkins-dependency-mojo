@@ -29,12 +29,13 @@ import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
 public class CopyMojo extends JenkinsPluginAbstractMojo {
 
     protected String getFileNameFromUrl(String url) {
-        return FilenameUtils.getName(url) + "." + FilenameUtils.getExtension(url);
+        return FilenameUtils.getName(url);
     }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        JenkinsClient jenkinsClient = new JenkinsClient(jenkinsUrl, jobName, buildNumber);
+        JenkinsClient jenkinsClient = getJenkinsClient();
+        
         try {
             List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
 

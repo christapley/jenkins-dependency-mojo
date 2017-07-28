@@ -15,32 +15,26 @@
  */
 package org.tapley.jenkins.maven.dependency.plugin;
 
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
+import org.junit.Test;
+import static org.junit.Assert.*;
+import org.junit.Before;
 
 /**
  *
  * @author ctapley
  */
-public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
-
-    @Parameter(required = true)
-    String jenkinsUrl;
-
-    @Parameter(required = true)
-    String jobName;
-
-    @Parameter(defaultValue = "lastSuccessfulBuild")
-    String buildNumber;
-
-    @Parameter(required = true)
-    String buildArtifact;
-
-    @Parameter(required = true)
-    String outputDirectory;
+public class TestCopyMojo {
     
-    JenkinsClient getJenkinsClient() {
-        return new JenkinsClient(jenkinsUrl, jobName, buildNumber);
+    CopyMojo mojo;
+    
+    @Before
+    public void init() {
+        mojo = new CopyMojo();
+    }
+    
+    @Test
+    public void getFileNameFromUrl() {
+        String actual = mojo.getFileNameFromUrl("http://brewery.ingrnet.com/jobs/tests/artifact/path/to/file.zip");
+        assertEquals("file.zip", actual);
     }
 }
