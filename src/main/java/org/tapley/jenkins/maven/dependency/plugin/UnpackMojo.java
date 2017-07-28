@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -29,6 +28,7 @@ import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
 import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.UnArchiver;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.manager.DefaultArchiverManager;
 import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 
@@ -53,29 +53,39 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         return FilenameUtils.getExtension(url);
     }
 
-    protected void unpack(File archive) {
-        
+    protected File ensureOutputDirectoryExists() {
+        File destination = new File(project.getBasedir(), outputDirectory);
+        destination.mkdirs();
+        if(!destination.exists()) {
+            throw new IllegalStateException(String.format("Output directory '%s' cannot be created", destination.getAbsolutePath()));
+        }
+        return destination;
+    }
+    
+    protected void unpack(File archive) throws NoSuchArchiverException {
+        File destination = ensureOutputDirectoryExists();
+        ArchiverManager archiverManager = new DefaultArchiverManager();
+        UnArchiver unArchiver = archiverManager.getUnArchiver(archive);
+        unArchiver.setSourceFile(archive);
+        unArchiver.setDestDirectory(destination);
+        unArchiver.extract();
     }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        JenkinsClient jenkinsClient = new JenkinsClient(jenkinsUrl, jobName, buildNumber);
+        JenkinsClient jenkinsClient = getJenkinsClient();
         try {
             List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
 
             getLog().info(String.format("Unpacking %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
 
             for (String url : matchingArtifactUrls) {
-                try {
-                    getLog().info(String.format("Processing detected artifact url %s", url));
-                    String extension = getFileExtension(url);
-                    File archiveFile = getTemporaryFile(extension);
-                    jenkinsClient.downloadArtifact(url, archiveFile);
-                    unpack(archiveFile);
-                } catch (Exception ex) {
-                    throw new MojoExecutionException("Failed to process artifact " + url, ex);
-                }
+                getLog().info(String.format("Processing detected artifact url %s", url));
+                String extension = getFileExtension(url);
+                File archiveFile = getTemporaryFile(extension);
+                jenkinsClient.downloadArtifact(url, archiveFile);
+                unpack(archiveFile);
             }
         } catch (Exception ex) {
             throw new MojoExecutionException("Failed to process artifacts", ex);

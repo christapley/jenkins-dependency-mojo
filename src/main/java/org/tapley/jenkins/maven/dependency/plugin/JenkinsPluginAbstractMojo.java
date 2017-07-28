@@ -17,6 +17,7 @@ package org.tapley.jenkins.maven.dependency.plugin;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
 
 /**
@@ -39,6 +40,9 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
 
     @Parameter(required = true)
     String outputDirectory;
+    
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    protected MavenProject project;
     
     JenkinsClient getJenkinsClient() {
         return new JenkinsClient(jenkinsUrl, jobName, buildNumber);
