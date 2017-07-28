@@ -38,13 +38,14 @@ public class CopyMojo extends JenkinsPluginAbstractMojo {
         
         try {
             List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
+            File destination = ensureOutputDirectoryExists();
 
             getLog().info(String.format("Copying %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
 
             for (String url : matchingArtifactUrls) {
                 try {
                     getLog().info(String.format("Processing detected artifact url %s", url));
-                    File outputFile = new File(outputDirectory, getFileNameFromUrl(url));
+                    File outputFile = new File(destination, getFileNameFromUrl(url));
                     jenkinsClient.downloadArtifact(url, outputFile);
                 } catch (Exception ex) {
                     throw new MojoExecutionException("Failed to process artifact " + url, ex);

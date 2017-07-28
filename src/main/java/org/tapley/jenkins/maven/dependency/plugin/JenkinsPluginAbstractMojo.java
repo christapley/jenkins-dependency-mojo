@@ -15,6 +15,7 @@
  */
 package org.tapley.jenkins.maven.dependency.plugin;
 
+import java.io.File;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -46,5 +47,14 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
     
     JenkinsClient getJenkinsClient() {
         return new JenkinsClient(jenkinsUrl, jobName, buildNumber);
+    }
+    
+    protected File ensureOutputDirectoryExists() {
+        File destination = new File(project.getBasedir(), outputDirectory);
+        destination.mkdirs();
+        if(!destination.exists()) {
+            throw new IllegalStateException(String.format("Output directory '%s' cannot be created", destination.getAbsolutePath()));
+        }
+        return destination;
     }
 }

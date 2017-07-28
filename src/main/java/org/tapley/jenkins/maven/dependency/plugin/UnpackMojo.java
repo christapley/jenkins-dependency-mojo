@@ -53,15 +53,6 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         return FilenameUtils.getExtension(url);
     }
 
-    protected File ensureOutputDirectoryExists() {
-        File destination = new File(project.getBasedir(), outputDirectory);
-        destination.mkdirs();
-        if(!destination.exists()) {
-            throw new IllegalStateException(String.format("Output directory '%s' cannot be created", destination.getAbsolutePath()));
-        }
-        return destination;
-    }
-    
     protected void unpack(File archive) throws NoSuchArchiverException {
         File destination = ensureOutputDirectoryExists();
         ArchiverManager archiverManager = new DefaultArchiverManager();
