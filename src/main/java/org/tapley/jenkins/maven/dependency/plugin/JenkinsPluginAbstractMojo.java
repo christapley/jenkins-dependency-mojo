@@ -43,14 +43,18 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
     String outputDirectory;
     
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    protected MavenProject project;
+    MavenProject project;
     
     JenkinsClient getJenkinsClient() {
         return new JenkinsClient(jenkinsUrl, jobName, buildNumber);
     }
     
+    protected File getOutputDirectoryFullPath() {
+        return new File(project.getBasedir(), outputDirectory);
+    }
+    
     protected File ensureOutputDirectoryExists() {
-        File destination = new File(project.getBasedir(), outputDirectory);
+        File destination = getOutputDirectoryFullPath();
         destination.mkdirs();
         if(!destination.exists()) {
             throw new IllegalStateException(String.format("Output directory '%s' cannot be created", destination.getAbsolutePath()));
