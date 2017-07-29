@@ -41,33 +41,17 @@ import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
  *
  * @author ctapley
  */
-public class TestCopyMojo {
-    
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+public class TestCopyMojo extends TestMojoBase {
     
     CopyMojo mojo;
     CopyMojo mojoSpy;
-    
-    List<String> matchingArtifactUrls;
-    
-    @Mock
-    JenkinsClient jenkinsClient;
-    
-    @Mock
-    File destination;
     
     @Before
     public void init() {
         mojo = new CopyMojo();
         mojoSpy = spy(mojo);
         
-        MockitoAnnotations.initMocks(this);
-        
         doReturn(jenkinsClient).when(mojoSpy).getJenkinsClient();
-        
-        matchingArtifactUrls = new ArrayList<>();
-        matchingArtifactUrls.add("http://download.com/file.zip");
     }
     
     @Test

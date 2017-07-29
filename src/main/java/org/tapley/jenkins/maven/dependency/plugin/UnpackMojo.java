@@ -45,7 +45,7 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
     @Parameter(required = false)
     String excludes;
 
-    protected File getTemporaryFile(String extension) throws IOException {
+    protected File getTemporaryFileWithExtension(String extension) throws IOException {
         return java.io.File.createTempFile(UUID.randomUUID().toString(), "." + extension);
     }
 
@@ -74,7 +74,7 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
             for (String url : matchingArtifactUrls) {
                 getLog().info(String.format("Processing detected artifact url %s", url));
                 String extension = getFileExtension(url);
-                File archiveFile = getTemporaryFile(extension);
+                File archiveFile = getTemporaryFileWithExtension(extension);
                 jenkinsClient.downloadArtifact(url, archiveFile);
                 unpack(archiveFile);
             }
