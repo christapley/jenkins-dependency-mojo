@@ -82,8 +82,10 @@ public class TestUnpackMojo extends TestMojoBase {
         File archive = mock(File.class);
         UnArchiver unArchiver = mock(UnArchiver.class);
         String expectedIncludes = "expectedIncludes";
+        String expectedExcludes = "expectedExcludes";
         
         ReflectionTestUtils.setField(mojoSpy, "includes", expectedIncludes);
+        ReflectionTestUtils.setField(mojoSpy, "excludes", expectedExcludes);
         
         doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
         doReturn(archiveManager).when(mojoSpy).getArchiverManager();
