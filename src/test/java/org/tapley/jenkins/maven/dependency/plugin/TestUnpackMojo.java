@@ -17,6 +17,8 @@ package org.tapley.jenkins.maven.dependency.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.codehaus.plexus.archiver.UnArchiver;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
 import org.codehaus.plexus.archiver.manager.DefaultArchiverManager;
@@ -24,12 +26,17 @@ import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  *
@@ -74,6 +81,9 @@ public class TestUnpackMojo extends TestMojoBase {
     public void unpack() throws NoSuchArchiverException {
         File archive = mock(File.class);
         UnArchiver unArchiver = mock(UnArchiver.class);
+        String expectedIncludes = "expectedIncludes";
+        
+        ReflectionTestUtils.setField(mojoSpy, "includes", expectedIncludes);
         
         doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
         doReturn(archiveManager).when(mojoSpy).getArchiverManager();
@@ -83,6 +93,50 @@ public class TestUnpackMojo extends TestMojoBase {
         
         verify(unArchiver, times(1)).setSourceFile(archive);
         verify(unArchiver, times(1)).setDestDirectory(destination);
+        verify(unArchiver, times(1)).setFileSelectors(any());
         verify(unArchiver, times(1)).extract();
+    }
+    
+    @Test
+    public void execute_getMatchingArtifactUrlsThrows() throws MojoExecutionException, MojoFailureException, IOException {
+        expectedException.expect(MojoExecutionException.class);
+        doThrow(new IOException("Bang!")).when(jenkinsClient).getMatchingArtifactUrls(anyString());
+        mojoSpy.execute();
+    }
+    
+    @Test
+    public void execute_ensureOutputDirectoryExistsThrows() throws MojoExecutionException, MojoFailureException, IOException {
+        expectedException.expect(MojoExecutionException.class);
+        doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
+        doThrow(new IllegalStateException("Bang!")).when(mojoSpy).ensureOutputDirectoryExists();
+        mojoSpy.execute();
+    }
+    
+    @Test
+    public void execute_downloadArtifactThrows() throws MojoExecutionException, MojoFailureException, IOException {
+        expectedException.expect(MojoExecutionException.class);
+        doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doThrow(new IOException("Bang!")).when(jenkinsClient).downloadArtifact(any(), any());
+        mojoSpy.execute();
+    }
+    
+    @Test
+    public void execute_ok() throws MojoExecutionException, MojoFailureException, IOException, NoSuchArchiverException {
+        String buildArtifact = "buildArtifact";
+        String destinationPath = "destinationPath";
+        destination = new File(destinationPath);
+        
+        ReflectionTestUtils.setField(mojoSpy, "buildArtifact", buildArtifact);
+        
+        doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(buildArtifact);
+        doReturn(destination).when(mojoSpy).getTemporaryFileWithExtension(any());
+        doNothing().when(mojoSpy).unpack(any());
+        
+        doNothing().when(jenkinsClient).downloadArtifact(matchingArtifactUrls.get(0), destination);
+        mojoSpy.execute();
+        
+        verify(jenkinsClient, times(1)).downloadArtifact(matchingArtifactUrls.get(0), destination);
+        verify(mojoSpy, times(1)).unpack(any());
     }
 }

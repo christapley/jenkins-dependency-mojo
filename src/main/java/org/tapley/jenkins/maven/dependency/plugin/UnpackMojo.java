@@ -29,6 +29,8 @@ import org.codehaus.plexus.archiver.UnArchiver;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
 import org.codehaus.plexus.archiver.manager.DefaultArchiverManager;
 import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
+import org.codehaus.plexus.components.io.fileselectors.IncludeExcludeFileSelector;
+import org.codehaus.plexus.util.StringUtils;
 
 /**
  *
@@ -61,6 +63,21 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         UnArchiver unArchiver = archiverManager.getUnArchiver(archive);
         unArchiver.setSourceFile(archive);
         unArchiver.setDestDirectory(destination);
+        
+        if (StringUtils.isNotEmpty(excludes) || StringUtils.isNotEmpty(includes)) {
+            IncludeExcludeFileSelector[] selectors = new IncludeExcludeFileSelector[]{new IncludeExcludeFileSelector()};
+
+            if (StringUtils.isNotEmpty(excludes)) {
+                selectors[0].setExcludes(excludes.split(","));
+            }
+
+            if (StringUtils.isNotEmpty(includes)) {
+                selectors[0].setIncludes(includes.split(","));
+            }
+
+            unArchiver.setFileSelectors(selectors);
+        }
+        
         unArchiver.extract();
     }
 
