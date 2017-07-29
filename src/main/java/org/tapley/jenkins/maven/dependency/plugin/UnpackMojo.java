@@ -51,9 +51,13 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         return FilenameUtils.getExtension(url);
     }
 
+    protected ArchiverManager getArchiverManager() {
+        return new DefaultArchiverManager();
+    }
+    
     protected void unpack(File archive) throws NoSuchArchiverException {
         File destination = ensureOutputDirectoryExists();
-        ArchiverManager archiverManager = new DefaultArchiverManager();
+        ArchiverManager archiverManager = getArchiverManager();
         UnArchiver unArchiver = archiverManager.getUnArchiver(archive);
         unArchiver.setSourceFile(archive);
         unArchiver.setDestDirectory(destination);

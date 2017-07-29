@@ -17,18 +17,19 @@ package org.tapley.jenkins.maven.dependency.plugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import org.codehaus.plexus.archiver.UnArchiver;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.manager.DefaultArchiverManager;
+import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import org.mockito.MockitoAnnotations;
-import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  *
@@ -38,6 +39,9 @@ public class TestUnpackMojo extends TestMojoBase {
 
     UnpackMojo mojo;
     UnpackMojo mojoSpy;
+    
+    @Mock
+    ArchiverManager archiveManager;
     
     @Before
     public void init() {
@@ -57,5 +61,28 @@ public class TestUnpackMojo extends TestMojoBase {
     public void getTemporaryFileWithExtension() throws IOException {
         File actual = mojo.getTemporaryFileWithExtension("zip");
         assertTrue(actual.getAbsolutePath().endsWith(".zip"));
+    }
+    
+    @Test
+    public void getArchiverManager() {
+        ArchiverManager manager = mojo.getArchiverManager();
+        assertNotNull(manager);
+        assertTrue(manager instanceof DefaultArchiverManager);
+    }
+    
+    @Test
+    public void unpack() throws NoSuchArchiverException {
+        File archive = mock(File.class);
+        UnArchiver unArchiver = mock(UnArchiver.class);
+        
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doReturn(archiveManager).when(mojoSpy).getArchiverManager();
+        doReturn(unArchiver).when(archiveManager).getUnArchiver(archive);
+                
+        mojoSpy.unpack(archive);
+        
+        verify(unArchiver, times(1)).setSourceFile(archive);
+        verify(unArchiver, times(1)).setDestDirectory(destination);
+        verify(unArchiver, times(1)).extract();
     }
 }
