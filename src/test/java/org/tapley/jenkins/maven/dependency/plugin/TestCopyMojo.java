@@ -33,6 +33,8 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
@@ -87,15 +89,19 @@ public class TestCopyMojo extends TestMojoBase {
     
     @Test
     public void execute_ok() throws MojoExecutionException, MojoFailureException, IOException {
-        expectedException.expect(MojoExecutionException.class);
+        String expectedFileName = "file.zip";
         String buildArtifact = "buildArtifact";
+        String destinationPath = "destinationPath";
+        destination = new File(destinationPath);
         
         ReflectionTestUtils.setField(mojoSpy, "buildArtifact", buildArtifact);
         
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(buildArtifact);
         doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
-        doReturn("file.zip").when(mojoSpy).getFileNameFromUrl(matchingArtifactUrls.get(0));
-        doNothing().when(jenkinsClient).downloadArtifact(any(), any());
+        doReturn(expectedFileName).when(mojoSpy).getFileNameFromUrl(matchingArtifactUrls.get(0));
+        doNothing().when(jenkinsClient).downloadArtifact(matchingArtifactUrls.get(0), new File(destination, expectedFileName));
         mojoSpy.execute();
+        
+        verify(jenkinsClient, times(1)).downloadArtifact(matchingArtifactUrls.get(0), new File(destination, expectedFileName));
     }
 }
