@@ -50,7 +50,7 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
     }
     
     protected File getOutputDirectoryFullPath() {
-        return new File(project.getBasedir(), outputDirectory);
+        return new File(outputDirectory);
     }
     
     protected File ensureOutputDirectoryExists() {

@@ -77,14 +77,8 @@ public class TestJenkinsPluginAbstractMojo {
     
     @Test
     public void getOutputDirectoryFullPath() {
-        File baseDir = new File("baseDir");
-        MavenProject project = mock(MavenProject.class);
-        doReturn(baseDir).when(project).getBasedir();
-        
-        ReflectionTestUtils.setField(mojo, "project", project);
         ReflectionTestUtils.setField(mojo, "outputDirectory", expectedOutputDirectory);
-        
-        assertEquals(new File(baseDir, expectedOutputDirectory).getAbsolutePath(), mojo.getOutputDirectoryFullPath().getAbsolutePath());
+        assertEquals(new File(expectedOutputDirectory).getAbsolutePath(), mojo.getOutputDirectoryFullPath().getAbsolutePath());
     }
     
     @Test

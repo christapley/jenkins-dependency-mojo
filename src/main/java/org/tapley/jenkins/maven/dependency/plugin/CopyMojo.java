@@ -20,12 +20,14 @@ import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
 
 /**
  *
  * @author ctapley
  */
+@Mojo( name = "copy", requiresProject = false, threadSafe = true )
 public class CopyMojo extends JenkinsPluginAbstractMojo {
 
     protected String getFileNameFromUrl(String url) {
@@ -37,14 +39,17 @@ public class CopyMojo extends JenkinsPluginAbstractMojo {
         JenkinsClient jenkinsClient = getJenkinsClient();
         
         try {
-            List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
             File destination = ensureOutputDirectoryExists();
-
+            getLog().info("Destination: " + destination.getAbsolutePath());
+            List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
+            
+            
             getLog().info(String.format("Copying %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
 
             for (String url : matchingArtifactUrls) {
                 getLog().info(String.format("Processing detected artifact url %s", url));
                 File outputFile = new File(destination, getFileNameFromUrl(url));
+                
                 jenkinsClient.downloadArtifact(url, outputFile);
             }
         } catch (Exception ex) {

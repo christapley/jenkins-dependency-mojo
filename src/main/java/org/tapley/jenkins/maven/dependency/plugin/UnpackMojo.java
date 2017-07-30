@@ -36,7 +36,7 @@ import org.codehaus.plexus.util.StringUtils;
  *
  * @author Chris Tapley
  */
-@Mojo(name = "Unpack")
+@Mojo( name = "unpack", requiresProject = false, threadSafe = true )
 public class UnpackMojo extends JenkinsPluginAbstractMojo {
 
     @Parameter(defaultValue = "**/**")
