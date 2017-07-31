@@ -29,6 +29,7 @@ import org.codehaus.plexus.archiver.UnArchiver;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
 import org.codehaus.plexus.archiver.manager.DefaultArchiverManager;
 import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
+import org.apache.maven.plugins.annotations.Component; 
 import org.codehaus.plexus.components.io.fileselectors.IncludeExcludeFileSelector;
 import org.codehaus.plexus.util.StringUtils;
 
@@ -45,6 +46,9 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
     @Parameter(required = false)
     String excludes;
 
+    @Component 
+    ArchiverManager archiverManager; 
+    
     protected File getTemporaryFileWithExtension(String extension) throws IOException {
         return java.io.File.createTempFile(UUID.randomUUID().toString(), "." + extension);
     }
@@ -53,13 +57,12 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         return FilenameUtils.getExtension(url);
     }
 
-    protected ArchiverManager getArchiverManager() {
-        return new DefaultArchiverManager();
-    }
-    
     protected void unpack(File archive) throws NoSuchArchiverException {
+        
         File destination = ensureOutputDirectoryExists();
-        ArchiverManager archiverManager = getArchiverManager();
+        
+        getLog().info("Unpacking " + archive.getAbsolutePath() + " to " + destination.getAbsolutePath());
+        
         UnArchiver unArchiver = archiverManager.getUnArchiver(archive);
         unArchiver.setSourceFile(archive);
         unArchiver.setDestDirectory(destination);

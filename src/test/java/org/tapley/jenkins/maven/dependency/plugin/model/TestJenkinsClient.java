@@ -111,9 +111,8 @@ public class TestJenkinsClient {
     public void getHttpClient() {
         HttpClient actualHttpClient = client.getHttpClient();
         assertNotNull(actualHttpClient);
-        assertTrue(actualHttpClient instanceof DefaultHttpClient);
     }
-    
+     
     @Test
     public void performHttpGet_throws() throws IOException {
         expectedException.expect(IOException.class);

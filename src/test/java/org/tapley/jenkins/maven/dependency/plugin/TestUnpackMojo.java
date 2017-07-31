@@ -48,7 +48,7 @@ public class TestUnpackMojo extends TestMojoBase {
     UnpackMojo mojoSpy;
     
     @Mock
-    ArchiverManager archiveManager;
+    ArchiverManager archiverManager;
     
     @Before
     public void init() {
@@ -71,13 +71,6 @@ public class TestUnpackMojo extends TestMojoBase {
     }
     
     @Test
-    public void getArchiverManager() {
-        ArchiverManager manager = mojo.getArchiverManager();
-        assertNotNull(manager);
-        assertTrue(manager instanceof DefaultArchiverManager);
-    }
-    
-    @Test
     public void unpack() throws NoSuchArchiverException {
         File archive = mock(File.class);
         UnArchiver unArchiver = mock(UnArchiver.class);
@@ -86,10 +79,10 @@ public class TestUnpackMojo extends TestMojoBase {
         
         ReflectionTestUtils.setField(mojoSpy, "includes", expectedIncludes);
         ReflectionTestUtils.setField(mojoSpy, "excludes", expectedExcludes);
+        ReflectionTestUtils.setField(mojoSpy, "archiverManager", archiverManager);
         
         doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
-        doReturn(archiveManager).when(mojoSpy).getArchiverManager();
-        doReturn(unArchiver).when(archiveManager).getUnArchiver(archive);
+        doReturn(unArchiver).when(archiverManager).getUnArchiver(archive);
                 
         mojoSpy.unpack(archive);
         
