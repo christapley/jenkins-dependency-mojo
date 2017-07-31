@@ -85,23 +85,25 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
     }
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
+    protected void executeForArtifactItem(ArtifactItem artifactItem) throws Exception {
+        
+        JenkinsClient jenkinsClient = getJenkinsClient(artifactItem);
+        List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(artifactItem.getBuildArtifact());
+            
+        getLog().info(String.format("Copying %s from job %s with build %s from %s", artifactItem.getBuildArtifact(), artifactItem.getJobName(), artifactItem.getBuildNumber(), artifactItem.getJenkinsUrl()));
 
-        JenkinsClient jenkinsClient = getJenkinsClient();
-        try {
-            List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
-
-            getLog().info(String.format("Unpacking %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
-
-            for (String url : matchingArtifactUrls) {
-                getLog().info(String.format("Processing detected artifact url %s", url));
-                String extension = getFileExtension(url);
-                File archiveFile = getTemporaryFileWithExtension(extension);
+        for (String url : matchingArtifactUrls) {
+            getLog().info(String.format("Processing detected artifact url %s", url));
+            String extension = getFileExtension(url);
+            File archiveFile = getTemporaryFileWithExtension(extension);
+            try {
                 jenkinsClient.downloadArtifact(url, archiveFile);
                 unpack(archiveFile);
+            } finally {
+                if(archiveFile.exists()) {
+                    archiveFile.delete();
+                }
             }
-        } catch (Exception ex) {
-            throw new MojoExecutionException("Failed to process artifacts", ex);
         }
     }
 }

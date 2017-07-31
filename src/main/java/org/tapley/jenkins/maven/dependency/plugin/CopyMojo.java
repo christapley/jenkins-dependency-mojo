@@ -18,8 +18,6 @@ package org.tapley.jenkins.maven.dependency.plugin;
 import java.io.File;
 import java.util.List;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
 
@@ -35,26 +33,19 @@ public class CopyMojo extends JenkinsPluginAbstractMojo {
     }
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        JenkinsClient jenkinsClient = getJenkinsClient();
+    protected void executeForArtifactItem(ArtifactItem artifactItem) throws Exception {
         
-        try {
-            File destination = ensureOutputDirectoryExists();
-            getLog().info("Destination: " + destination.getAbsolutePath());
-            List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(buildArtifact);
+        JenkinsClient jenkinsClient = getJenkinsClient(artifactItem);
+        File destination = ensureOutputDirectoryExists();
+        List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(artifactItem.getBuildArtifact());
             
-            
-            getLog().info(String.format("Copying %s from job %s with build %s from %s", buildArtifact, jobName, buildNumber, jenkinsUrl));
+        getLog().info(String.format("Copying %s from job %s with build %s from %s", artifactItem.getBuildArtifact(), artifactItem.getJobName(), artifactItem.getBuildNumber(), artifactItem.getJenkinsUrl()));
 
-            for (String url : matchingArtifactUrls) {
-                getLog().info(String.format("Processing detected artifact url %s", url));
-                File outputFile = new File(destination, getFileNameFromUrl(url));
+        for (String url : matchingArtifactUrls) {
+            getLog().info(String.format("Processing detected artifact url %s", url));
+            File outputFile = new File(destination, getFileNameFromUrl(url));
                 
-                jenkinsClient.downloadArtifact(url, outputFile);
-            }
-        } catch (Exception ex) {
-            throw new MojoExecutionException("Failed to process artifacts", ex);
+            jenkinsClient.downloadArtifact(url, outputFile);
         }
     }
-
 }

@@ -16,9 +16,6 @@
 package org.tapley.jenkins.maven.dependency.plugin;
 
 import java.io.File;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.project.MavenProject;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -47,9 +44,9 @@ public class TestJenkinsPluginAbstractMojo {
     String expectedOutputDirectory = "expectedOutputDirectory";
     
     private class JenkinsPluginAbstractMojoInternal extends JenkinsPluginAbstractMojo {
-        
+       
         @Override
-        public void execute() throws MojoExecutionException, MojoFailureException {
+        protected void executeForArtifactItem(ArtifactItem artifactItem) throws Exception {
             
         }
         
@@ -64,11 +61,12 @@ public class TestJenkinsPluginAbstractMojo {
     
     @Test
     public void getJenkinsClient() {
-        ReflectionTestUtils.setField(mojo, "jenkinsUrl", expectedJenkinsUrl);
-        ReflectionTestUtils.setField(mojo, "jobName", expectedJobName);
-        ReflectionTestUtils.setField(mojo, "buildNumber", expectedBuildNumber);
+        ArtifactItem artifactItem = mock(ArtifactItem.class);
+        doReturn(expectedJenkinsUrl).when(artifactItem).getJenkinsUrl();
+        doReturn(expectedJobName).when(artifactItem).getJobName();
+        doReturn(expectedBuildNumber).when(artifactItem).getBuildNumber();
         
-        JenkinsClient client = mojo.getJenkinsClient();
+        JenkinsClient client = mojo.getJenkinsClient(artifactItem);
         assertNotNull(client);
         assertEquals(expectedJenkinsUrl, ReflectionTestUtils.getField(client, "jenkinsUrl"));
         assertEquals(expectedJobName, ReflectionTestUtils.getField(client, "jobName"));
@@ -115,4 +113,27 @@ public class TestJenkinsPluginAbstractMojo {
         verify(baseDir, times(1)).exists();
         verify(baseDir, times(1)).mkdirs();
     }
+    
+    @Test
+    public void fillInMissingArtifactItemFieldsFromDefaults_nullarg() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("artifactItem");
+        
+        mojo.fillInMissingArtifactItemFieldsFromDefaults(null);
+    }
+
+    @Test
+    public void fillInMissingArtifactItemFieldsFromDefaults_ok() {
+        ArtifactItem artifactItem = new ArtifactItem();
+        ReflectionTestUtils.setField(mojo, "jenkinsUrl", expectedJenkinsUrl);
+        ReflectionTestUtils.setField(mojo, "jobName", expectedJobName);
+        ReflectionTestUtils.setField(mojo, "buildNumber", expectedBuildNumber);
+        ReflectionTestUtils.setField(mojo, "outputDirectory", expectedOutputDirectory);
+        mojo.fillInMissingArtifactItemFieldsFromDefaults(artifactItem);
+        
+        assertEquals(expectedJenkinsUrl, artifactItem.getJenkinsUrl());
+        assertEquals(expectedJobName, artifactItem.getJobName());
+        assertEquals(expectedBuildNumber, artifactItem.getBuildNumber());
+        assertEquals(expectedOutputDirectory, artifactItem.getOutputDirectory());
+    }    
 }

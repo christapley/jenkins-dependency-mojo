@@ -16,9 +16,13 @@
 package org.tapley.jenkins.maven.dependency.plugin;
 
 import java.io.File;
+import java.util.List;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.StringUtils;
 import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
 
 /**
@@ -37,20 +41,52 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
     String buildNumber;
 
     @Parameter(required = true)
-    String buildArtifact;
-
-    @Parameter(required = true)
     String outputDirectory;
+    
+    @Parameter(required = true)
+    List<ArtifactItem> artifactItems;
     
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     MavenProject project;
     
-    JenkinsClient getJenkinsClient() {
-        return new JenkinsClient(jenkinsUrl, jobName, buildNumber);
+    JenkinsClient getJenkinsClient(ArtifactItem artifactItem) {
+        return new JenkinsClient(artifactItem.getJenkinsUrl(), artifactItem.getJobName(), artifactItem.getBuildNumber());
     }
     
     protected File getOutputDirectoryFullPath() {
         return new File(outputDirectory);
+    }
+    
+    protected String selectFirstIfNotBlank(String first, String second) {
+        if(StringUtils.isNotBlank(first)) { 
+            return first;
+        } else {
+            return second;
+        }
+    }
+    
+    protected void fillInMissingArtifactItemFieldsFromDefaults(ArtifactItem artifactItem) {
+        if (artifactItem == null) {
+            throw new IllegalArgumentException("artifactItem cannot be null");
+        }
+        artifactItem.setJenkinsUrl(selectFirstIfNotBlank(artifactItem.getJenkinsUrl(), jenkinsUrl));
+        artifactItem.setJobName(selectFirstIfNotBlank(artifactItem.getJobName(), jobName));
+        artifactItem.setBuildNumber(selectFirstIfNotBlank(artifactItem.getBuildNumber(), buildNumber));
+        artifactItem.setOutputDirectory(selectFirstIfNotBlank(artifactItem.getOutputDirectory(), outputDirectory));
+    }
+    
+    protected abstract void executeForArtifactItem(ArtifactItem artifactItem) throws Exception;
+    
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        try {
+            for(ArtifactItem artifactItem : artifactItems) {
+                fillInMissingArtifactItemFieldsFromDefaults(artifactItem);
+                executeForArtifactItem(artifactItem);
+            }
+        } catch (Exception ex) {
+            throw new MojoExecutionException("Failed to process artifacts", ex);
+        }
     }
     
     protected File ensureOutputDirectoryExists() {
