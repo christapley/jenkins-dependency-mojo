@@ -37,7 +37,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.util.AntPathMatcher;
 
@@ -68,11 +67,15 @@ public class JenkinsClient {
         return IOUtils.toString(inputStream, "UTF8");
     }
 
+    protected SSLContext getSSLContext() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        return new SSLContextBuilder().loadTrustMaterial(null, (certificate, authType) -> true).build();
+    }
+    
     protected HttpClient getHttpClient() {
         try {
-            SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, (certificate, authType) -> true).build();
+            
             CloseableHttpClient client = HttpClients.custom()
-                    .setSSLContext(sslContext)
+                    .setSSLContext(getSSLContext())
                     .setSSLHostnameVerifier(new NoopHostnameVerifier())
                     .build();
 

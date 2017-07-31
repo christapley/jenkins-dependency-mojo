@@ -48,6 +48,7 @@ public class TestJenkinsPluginAbstractMojo {
     String expectedJobName = "expectedJobName";
     String expectedBuildNumber = "expectedBuildNumber";
     String expectedOutputDirectory = "expectedOutputDirectory";
+    String expectedBuildArtifact = "expectedBuildArtifact";
     
     private class JenkinsPluginAbstractMojoInternal extends JenkinsPluginAbstractMojo {
        
@@ -135,12 +136,15 @@ public class TestJenkinsPluginAbstractMojo {
         ReflectionTestUtils.setField(mojo, "jobName", expectedJobName);
         ReflectionTestUtils.setField(mojo, "buildNumber", expectedBuildNumber);
         ReflectionTestUtils.setField(mojo, "outputDirectory", expectedOutputDirectory);
+        artifactItem.setBuildArtifact(expectedBuildArtifact);
+        
         mojo.fillInMissingArtifactItemFieldsFromDefaults(artifactItem);
         
         assertEquals(expectedJenkinsUrl, artifactItem.getJenkinsUrl());
         assertEquals(expectedJobName, artifactItem.getJobName());
         assertEquals(expectedBuildNumber, artifactItem.getBuildNumber());
         assertEquals(expectedOutputDirectory, artifactItem.getOutputDirectory());
+        assertEquals(expectedBuildArtifact, artifactItem.getBuildArtifact());
     }
 
     @Test    
@@ -162,5 +166,25 @@ public class TestJenkinsPluginAbstractMojo {
         doNothing().when(mojoSpy).executeForArtifactItem(artifactItem);
         mojoSpy.execute();
         verify(mojoSpy, times(1)).executeForArtifactItem(artifactItem);
+    }
+    
+    @Test
+    public void selectFirstIfNotBlank_firstIsBlank() {
+        String second = "expectedSecond";
+        assertEquals(second, mojo.selectFirstIfNotBlank(null, second));
+        assertEquals(second, mojo.selectFirstIfNotBlank("", second));
+        assertEquals(second, mojo.selectFirstIfNotBlank("   ", second));
+        assertEquals(second, mojo.selectFirstIfNotBlank("\t", second));
+    }
+    
+    @Test
+    public void selectFirstIfNotBlank_firstIsNotBlank() {
+        String first = "expectedFirst";
+        String second = "notExpectedSecond";
+        assertEquals(first, mojo.selectFirstIfNotBlank(first, null));
+        assertEquals(first, mojo.selectFirstIfNotBlank(first, ""));
+        assertEquals(first, mojo.selectFirstIfNotBlank(first, "   "));
+        assertEquals(first, mojo.selectFirstIfNotBlank(first, "\t"));
+        assertEquals(first, mojo.selectFirstIfNotBlank(first, second));
     }
 }

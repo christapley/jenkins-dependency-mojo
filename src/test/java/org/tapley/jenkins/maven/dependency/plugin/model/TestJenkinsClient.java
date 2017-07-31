@@ -19,6 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +33,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -108,9 +110,21 @@ public class TestJenkinsClient {
     }
     
     @Test
+    public void getSSLContext() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        assertNotNull(client.getSSLContext());
+    }
+    
+    @Test
     public void getHttpClient() {
         HttpClient actualHttpClient = client.getHttpClient();
         assertNotNull(actualHttpClient);
+    }
+    
+    @Test
+    public void getHttpClient_throws() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        expectedException.expect(IllegalStateException.class);
+        doThrow(new NoSuchAlgorithmException("bad")).when(clientSpy).getSSLContext();
+        clientSpy.getHttpClient();
     }
      
     @Test
