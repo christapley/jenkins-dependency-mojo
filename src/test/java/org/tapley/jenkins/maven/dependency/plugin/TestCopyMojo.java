@@ -54,48 +54,55 @@ public class TestCopyMojo extends TestMojoBase {
         String actual = mojo.getFileNameFromUrl("http://brewery.ingrnet.com/jobs/tests/artifact/path/to/file.zip");
         assertEquals("file.zip", actual);
     }
-    /*
+    
     @Test
-    public void execute_getMatchingArtifactUrlsThrows() throws MojoExecutionException, MojoFailureException, IOException {
-        expectedException.expect(MojoExecutionException.class);
-        doThrow(new IOException("Bang!")).when(jenkinsClient).getMatchingArtifactUrls(anyString());
-        mojoSpy.execute();
+    public void executeForArtifactItem_getMatchingArtifactUrlsThrows() throws Exception {
+        expectedException.expect(IOException.class);
+        
+        String destinationPath = "destinationPath";
+        destination = new File(destinationPath);
+        
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doThrow(new IOException("Bang!")).when(jenkinsClient).getMatchingArtifactUrls(any());
+        mojoSpy.executeForArtifactItem(artifactItem);
     }
     
     @Test
-    public void execute_ensureOutputDirectoryExistsThrows() throws MojoExecutionException, MojoFailureException, IOException {
-        expectedException.expect(MojoExecutionException.class);
-        doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
+    public void executeForArtifactItem_ensureOutputDirectoryExistsThrows() throws Exception {
+        expectedException.expect(IllegalStateException.class);
+        doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(any());
         doThrow(new IllegalStateException("Bang!")).when(mojoSpy).ensureOutputDirectoryExists();
-        mojoSpy.execute();
+        mojoSpy.executeForArtifactItem(artifactItem);
     }
     
     @Test
-    public void execute_downloadArtifactThrows() throws MojoExecutionException, MojoFailureException, IOException {
-        expectedException.expect(MojoExecutionException.class);
+    public void executeForArtifactItem_downloadArtifactThrows() throws Exception {
+        expectedException.expect(IOException.class);
+        String destinationPath = "destinationPath";
+        destination = new File(destinationPath);
+        
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
         doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
         doReturn("file.zip").when(mojoSpy).getFileNameFromUrl(anyString());
         doThrow(new IOException("Bang!")).when(jenkinsClient).downloadArtifact(any(), any());
-        mojoSpy.execute();
+        mojoSpy.executeForArtifactItem(artifactItem);
     }
     
     @Test
-    public void execute_ok() throws MojoExecutionException, MojoFailureException, IOException {
+    public void executeForArtifactItem_ok() throws Exception {
         String expectedFileName = "file.zip";
         String buildArtifact = "buildArtifact";
         String destinationPath = "destinationPath";
         destination = new File(destinationPath);
         
-        ReflectionTestUtils.setField(mojoSpy, "buildArtifact", buildArtifact);
+        doReturn(buildArtifact).when(artifactItem).getBuildArtifact();
         
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(buildArtifact);
         doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
         doReturn(expectedFileName).when(mojoSpy).getFileNameFromUrl(matchingArtifactUrls.get(0));
         doNothing().when(jenkinsClient).downloadArtifact(matchingArtifactUrls.get(0), new File(destination, expectedFileName));
-        mojoSpy.execute();
+        mojoSpy.executeForArtifactItem(artifactItem);
         
         verify(jenkinsClient, times(1)).downloadArtifact(matchingArtifactUrls.get(0), new File(destination, expectedFileName));
     }
-*/
 }

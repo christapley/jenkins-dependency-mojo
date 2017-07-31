@@ -42,6 +42,9 @@ public class TestMojoBase {
     @Mock
     File destination;
     
+    @Mock
+    ArtifactItem artifactItem;
+    
     List<String> matchingArtifactUrls;
     
     @Before

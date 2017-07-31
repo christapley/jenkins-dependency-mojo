@@ -16,12 +16,18 @@
 package org.tapley.jenkins.maven.dependency.plugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -53,10 +59,12 @@ public class TestJenkinsPluginAbstractMojo {
     }
     
     JenkinsPluginAbstractMojoInternal mojo;
+    JenkinsPluginAbstractMojoInternal mojoSpy;
     
     @Before
     public void init() {
         mojo = new JenkinsPluginAbstractMojoInternal();
+        mojoSpy = spy(mojo);
     }
     
     @Test
@@ -82,7 +90,6 @@ public class TestJenkinsPluginAbstractMojo {
     @Test
     public void ensureOutputDirectoryExists_cannotCreate() {
         File baseDir = mock(File.class);
-        JenkinsPluginAbstractMojoInternal mojoSpy = spy(mojo);
         doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath();
         doReturn(false).when(baseDir).exists();
         
@@ -94,7 +101,6 @@ public class TestJenkinsPluginAbstractMojo {
     @Test
     public void ensureOutputDirectoryExists_alreadyExists() {
         File baseDir = mock(File.class);
-        JenkinsPluginAbstractMojoInternal mojoSpy = spy(mojo);
         doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath();
         doReturn(true).when(baseDir).exists();
         mojoSpy.ensureOutputDirectoryExists();
@@ -135,5 +141,26 @@ public class TestJenkinsPluginAbstractMojo {
         assertEquals(expectedJobName, artifactItem.getJobName());
         assertEquals(expectedBuildNumber, artifactItem.getBuildNumber());
         assertEquals(expectedOutputDirectory, artifactItem.getOutputDirectory());
-    }    
+    }
+
+    @Test    
+    public void execute_throws() throws Exception {
+        expectedException.expect(MojoExecutionException.class);
+        ArtifactItem artifactItem = mock(ArtifactItem.class);
+        List<ArtifactItem> artifactItems = Arrays.asList(artifactItem);
+        ReflectionTestUtils.setField(mojoSpy, "artifactItems", artifactItems);
+        doThrow(new IOException("bang!")).when(mojoSpy).executeForArtifactItem(artifactItem);
+        mojoSpy.execute();
+        verify(mojoSpy, times(1)).executeForArtifactItem(artifactItem);
+    }
+    
+    @Test    
+    public void execute_ok() throws Exception {
+        ArtifactItem artifactItem = mock(ArtifactItem.class);
+        List<ArtifactItem> artifactItems = Arrays.asList(artifactItem);
+        ReflectionTestUtils.setField(mojoSpy, "artifactItems", artifactItems);
+        doNothing().when(mojoSpy).executeForArtifactItem(artifactItem);
+        mojoSpy.execute();
+        verify(mojoSpy, times(1)).executeForArtifactItem(artifactItem);
+    }
 }
