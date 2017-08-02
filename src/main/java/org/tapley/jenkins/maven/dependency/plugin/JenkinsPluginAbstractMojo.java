@@ -31,16 +31,16 @@ import org.tapley.jenkins.maven.dependency.plugin.model.JenkinsClient;
  */
 public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
 
-    @Parameter(required = true)
+    @Parameter
     String jenkinsUrl;
 
-    @Parameter(required = true)
+    @Parameter
     String jobName;
 
     @Parameter(defaultValue = "lastSuccessfulBuild")
     String buildNumber;
 
-    @Parameter(required = true)
+    @Parameter
     String outputDirectory;
     
     @Parameter(required = true)
@@ -53,8 +53,8 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
         return new JenkinsClient(artifactItem.getJenkinsUrl(), artifactItem.getJobName(), artifactItem.getBuildNumber());
     }
     
-    protected File getOutputDirectoryFullPath() {
-        return new File(outputDirectory);
+    protected File getOutputDirectoryFullPath(String resolvedOutputDirectory) {
+        return new File(resolvedOutputDirectory);
     }
     
     protected String selectFirstIfNotBlank(String first, String second) {
@@ -89,8 +89,8 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
         }
     }
     
-    protected File ensureOutputDirectoryExists() {
-        File destination = getOutputDirectoryFullPath();
+    protected File ensureOutputDirectoryExists(String resolvedOutputDirectory) {
+        File destination = getOutputDirectoryFullPath(resolvedOutputDirectory);
         destination.mkdirs();
         if(!destination.exists()) {
             throw new IllegalStateException(String.format("Output directory '%s' cannot be created", destination.getAbsolutePath()));

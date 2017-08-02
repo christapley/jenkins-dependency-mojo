@@ -25,6 +25,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -85,26 +86,26 @@ public class TestJenkinsPluginAbstractMojo {
     @Test
     public void getOutputDirectoryFullPath() {
         ReflectionTestUtils.setField(mojo, "outputDirectory", expectedOutputDirectory);
-        assertEquals(new File(expectedOutputDirectory).getAbsolutePath(), mojo.getOutputDirectoryFullPath().getAbsolutePath());
+        assertEquals(new File(expectedOutputDirectory).getAbsolutePath(), mojo.getOutputDirectoryFullPath(expectedOutputDirectory).getAbsolutePath());
     }
     
     @Test
     public void ensureOutputDirectoryExists_cannotCreate() {
         File baseDir = mock(File.class);
-        doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath();
+        doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath(expectedOutputDirectory);
         doReturn(false).when(baseDir).exists();
         
         expectedException.expect(IllegalStateException.class);
         
-        mojoSpy.ensureOutputDirectoryExists();
+        mojoSpy.ensureOutputDirectoryExists(expectedOutputDirectory);
     }
     
     @Test
     public void ensureOutputDirectoryExists_alreadyExists() {
         File baseDir = mock(File.class);
-        doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath();
+        doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath(expectedOutputDirectory);
         doReturn(true).when(baseDir).exists();
-        mojoSpy.ensureOutputDirectoryExists();
+        mojoSpy.ensureOutputDirectoryExists(expectedOutputDirectory);
         
         verify(baseDir, times(1)).exists();
     }
@@ -113,9 +114,9 @@ public class TestJenkinsPluginAbstractMojo {
     public void ensureOutputDirectoryExists_creates() {
         File baseDir = mock(File.class);
         JenkinsPluginAbstractMojoInternal mojoSpy = spy(mojo);
-        doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath();
+        doReturn(baseDir).when(mojoSpy).getOutputDirectoryFullPath(expectedOutputDirectory);
         doReturn(true).when(baseDir).exists();
-        mojoSpy.ensureOutputDirectoryExists();
+        mojoSpy.ensureOutputDirectoryExists(expectedOutputDirectory);
         
         verify(baseDir, times(1)).exists();
         verify(baseDir, times(1)).mkdirs();

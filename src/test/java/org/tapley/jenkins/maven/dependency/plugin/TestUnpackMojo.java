@@ -81,10 +81,9 @@ public class TestUnpackMojo extends TestMojoBase {
         ReflectionTestUtils.setField(mojoSpy, "excludes", expectedExcludes);
         ReflectionTestUtils.setField(mojoSpy, "archiverManager", archiverManager);
         
-        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
         doReturn(unArchiver).when(archiverManager).getUnArchiver(archive);
                 
-        mojoSpy.unpack(archive);
+        mojoSpy.unpack(archive, destination);
         
         verify(unArchiver, times(1)).setSourceFile(archive);
         verify(unArchiver, times(1)).setDestDirectory(destination);
@@ -103,7 +102,7 @@ public class TestUnpackMojo extends TestMojoBase {
     public void executeForArtifactItem_ensureOutputDirectoryExistsThrows() throws Exception {
         expectedException.expect(IllegalStateException.class);
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
-        doThrow(new IllegalStateException("Bang!")).when(mojoSpy).ensureOutputDirectoryExists();
+        doThrow(new IllegalStateException("Bang!")).when(mojoSpy).ensureOutputDirectoryExists(any());
         mojoSpy.executeForArtifactItem(artifactItem);
     }
     
@@ -111,7 +110,7 @@ public class TestUnpackMojo extends TestMojoBase {
     public void executeForArtifactItem_downloadArtifactThrows() throws Exception {
         expectedException.expect(IOException.class);
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
-        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists(any());
         doThrow(new IOException("Bang!")).when(jenkinsClient).downloadArtifact(any(), any());
         mojoSpy.executeForArtifactItem(artifactItem);
     }
@@ -126,12 +125,13 @@ public class TestUnpackMojo extends TestMojoBase {
         
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(buildArtifact);
         doReturn(destination).when(mojoSpy).getTemporaryFileWithExtension(any());
-        doNothing().when(mojoSpy).unpack(any());
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists(any());
+        doNothing().when(mojoSpy).unpack(any(), any());
         
         doNothing().when(jenkinsClient).downloadArtifact(matchingArtifactUrls.get(0), destination);
         mojoSpy.executeForArtifactItem(artifactItem);
         
         verify(jenkinsClient, times(1)).downloadArtifact(matchingArtifactUrls.get(0), destination);
-        verify(mojoSpy, times(1)).unpack(any());
+        verify(mojoSpy, times(1)).unpack(any(), any());
     }
 }

@@ -36,7 +36,7 @@ public class CopyMojo extends JenkinsPluginAbstractMojo {
     protected void executeForArtifactItem(ArtifactItem artifactItem) throws Exception {
         
         JenkinsClient jenkinsClient = getJenkinsClient(artifactItem);
-        File destination = ensureOutputDirectoryExists();
+        File destination = ensureOutputDirectoryExists(artifactItem.getOutputDirectory());
         List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(artifactItem.getBuildArtifact());
             
         getLog().info(String.format("Copying %s from job %s with build %s from %s", artifactItem.getBuildArtifact(), artifactItem.getJobName(), artifactItem.getBuildNumber(), artifactItem.getJenkinsUrl()));

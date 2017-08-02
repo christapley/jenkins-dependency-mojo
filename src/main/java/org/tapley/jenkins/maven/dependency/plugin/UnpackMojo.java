@@ -57,9 +57,7 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         return FilenameUtils.getExtension(url);
     }
 
-    protected void unpack(File archive) throws NoSuchArchiverException {
-        
-        File destination = ensureOutputDirectoryExists();
+    protected void unpack(File archive, File destination) throws NoSuchArchiverException {
         
         getLog().info("Unpacking " + archive.getAbsolutePath() + " to " + destination.getAbsolutePath());
         
@@ -89,7 +87,8 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
         
         JenkinsClient jenkinsClient = getJenkinsClient(artifactItem);
         List<String> matchingArtifactUrls = jenkinsClient.getMatchingArtifactUrls(artifactItem.getBuildArtifact());
-            
+        File destination = ensureOutputDirectoryExists(artifactItem.getOutputDirectory());
+        
         getLog().info(String.format("Copying %s from job %s with build %s from %s", artifactItem.getBuildArtifact(), artifactItem.getJobName(), artifactItem.getBuildNumber(), artifactItem.getJenkinsUrl()));
 
         for (String url : matchingArtifactUrls) {
@@ -98,7 +97,7 @@ public class UnpackMojo extends JenkinsPluginAbstractMojo {
             File archiveFile = getTemporaryFileWithExtension(extension);
             try {
                 jenkinsClient.downloadArtifact(url, archiveFile);
-                unpack(archiveFile);
+                unpack(archiveFile, destination);
             } finally {
                 if(archiveFile.exists()) {
                     archiveFile.delete();

@@ -62,7 +62,7 @@ public class TestCopyMojo extends TestMojoBase {
         String destinationPath = "destinationPath";
         destination = new File(destinationPath);
         
-        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists(any());
         doThrow(new IOException("Bang!")).when(jenkinsClient).getMatchingArtifactUrls(any());
         mojoSpy.executeForArtifactItem(artifactItem);
     }
@@ -71,7 +71,7 @@ public class TestCopyMojo extends TestMojoBase {
     public void executeForArtifactItem_ensureOutputDirectoryExistsThrows() throws Exception {
         expectedException.expect(IllegalStateException.class);
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(any());
-        doThrow(new IllegalStateException("Bang!")).when(mojoSpy).ensureOutputDirectoryExists();
+        doThrow(new IllegalStateException("Bang!")).when(mojoSpy).ensureOutputDirectoryExists(anyString());
         mojoSpy.executeForArtifactItem(artifactItem);
     }
     
@@ -79,10 +79,12 @@ public class TestCopyMojo extends TestMojoBase {
     public void executeForArtifactItem_downloadArtifactThrows() throws Exception {
         expectedException.expect(IOException.class);
         String destinationPath = "destinationPath";
+        
         destination = new File(destinationPath);
+        doReturn(destinationPath).when(artifactItem).getOutputDirectory();
         
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(anyString());
-        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists(destinationPath);
         doReturn("file.zip").when(mojoSpy).getFileNameFromUrl(anyString());
         doThrow(new IOException("Bang!")).when(jenkinsClient).downloadArtifact(any(), any());
         mojoSpy.executeForArtifactItem(artifactItem);
@@ -96,9 +98,10 @@ public class TestCopyMojo extends TestMojoBase {
         destination = new File(destinationPath);
         
         doReturn(buildArtifact).when(artifactItem).getBuildArtifact();
+        doReturn(destinationPath).when(artifactItem).getOutputDirectory();
         
         doReturn(matchingArtifactUrls).when(jenkinsClient).getMatchingArtifactUrls(buildArtifact);
-        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists();
+        doReturn(destination).when(mojoSpy).ensureOutputDirectoryExists(destinationPath);
         doReturn(expectedFileName).when(mojoSpy).getFileNameFromUrl(matchingArtifactUrls.get(0));
         doNothing().when(jenkinsClient).downloadArtifact(matchingArtifactUrls.get(0), new File(destination, expectedFileName));
         mojoSpy.executeForArtifactItem(artifactItem);
