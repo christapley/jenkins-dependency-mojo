@@ -19,6 +19,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -50,6 +52,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  *
@@ -104,7 +107,16 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getJobApiJsonUrl() {
+    public void getJobApiJsonUrl() throws UnsupportedEncodingException {
+        String actual = client.getJobApiJsonUrl();
+        assertEquals(String.format("%s/job/%s/%s/api/json", expectedJenkinsUrl, expectedJobName, expectedBuildNumber), actual);
+    }
+    
+    @Test
+    public void getJobApiJsonUrl_spaces() throws UnsupportedEncodingException {
+        String actualJobName = expectedJobName + " " + expectedJobName;
+        expectedJobName = expectedJobName + "+" + expectedJobName;
+        ReflectionTestUtils.setField(client, "jobName", actualJobName);
         String actual = client.getJobApiJsonUrl();
         assertEquals(String.format("%s/job/%s/%s/api/json", expectedJenkinsUrl, expectedJobName, expectedBuildNumber), actual);
     }
@@ -128,7 +140,7 @@ public class TestJenkinsClient {
     }
      
     @Test
-    public void performHttpGet_throws() throws IOException {
+    public void performHttpGet_throws() throws IOException, URISyntaxException {
         expectedException.expect(IOException.class);
         doReturn(httpClient).when(clientSpy).getHttpClient();
         when(httpClient.execute(any())).thenThrow(new IOException("Bang!"));
@@ -137,7 +149,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void performHttpGet_non200response() throws IOException {
+    public void performHttpGet_non200response() throws IOException, URISyntaxException {
         expectedException.expect(IllegalStateException.class);
         expectedException.expectMessage("500");
         doReturn(httpClient).when(clientSpy).getHttpClient();
@@ -149,16 +161,14 @@ public class TestJenkinsClient {
         when(response.getStatusLine()).thenReturn(statusLine);
         when(statusLine.getStatusCode()).thenReturn(500);
         
-        
-        
         clientSpy.performHttpGet(expectedUrl);
     }
     
     @Test
-    public void performHttpGet_ok() throws IOException {
+    public void performHttpGet_ok() throws IOException, URISyntaxException {
         
         doReturn(httpClient).when(clientSpy).getHttpClient();
-        String expectedUrl = "http://brewery.ingrnet.com/job/test/1/api/json";
+        String expectedUrl = "http://brewery.ingrnet.com/job/test/promoted%20build/api/json";
         HttpResponse response = mock(HttpResponse.class);
         StatusLine statusLine = mock(StatusLine.class);
         HttpEntity httpEntity = mock(HttpEntity.class);
@@ -185,7 +195,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getArtifactPathsFromJenkins_ok() throws IOException {
+    public void getArtifactPathsFromJenkins_ok() throws IOException, URISyntaxException {
         String expectedUrl = "http://brewery.ingrnet.com/job/test/1/api/json";
         InputStream inputStream = new ByteArrayInputStream(jobResponse.getBytes());
         
@@ -196,7 +206,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getArtifactPathsFromJenkins_throws() throws IOException {
+    public void getArtifactPathsFromJenkins_throws() throws IOException, URISyntaxException {
         expectedException.expect(IOException.class);
         
         String expectedUrl = "http://brewery.ingrnet.com/job/test/1/api/json";
@@ -206,13 +216,13 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getUrlForArtifactRelativePath_ok() {
+    public void getUrlForArtifactRelativePath_ok() throws UnsupportedEncodingException {
         String expectedArtifactRelativePath = "expectedArtifactRelativePath";
         assertEquals(String.format("%s/job/%s/%s/artifact/%s", expectedJenkinsUrl, expectedJobName, expectedBuildNumber, expectedArtifactRelativePath), client.getUrlForArtifactRelativePath(expectedArtifactRelativePath));
     }
     
     @Test
-    public void getMatchingArtifactUrls_all() throws IOException {
+    public void getMatchingArtifactUrls_all() throws IOException, URISyntaxException {
         doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
         doAnswer((Answer)(InvokationArguments) -> {
             return (String)InvokationArguments.getArgumentAt(0, String.class);
@@ -221,7 +231,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getMatchingArtifactUrls_FULL_VERSION() throws IOException {
+    public void getMatchingArtifactUrls_FULL_VERSION() throws IOException, URISyntaxException {
         doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
         doAnswer((Answer)(InvokationArguments) -> {
             return (String)InvokationArguments.getArgumentAt(0, String.class);
@@ -233,7 +243,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getMatchingArtifactUrls_ReleasePathMulti() throws IOException {
+    public void getMatchingArtifactUrls_ReleasePathMulti() throws IOException, URISyntaxException {
         doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
         doAnswer((Answer)(InvokationArguments) -> {
             return (String)InvokationArguments.getArgumentAt(0, String.class);
@@ -250,7 +260,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getMatchingArtifactUrls_localZips() throws IOException {
+    public void getMatchingArtifactUrls_localZips() throws IOException, URISyntaxException {
         doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
         doAnswer((Answer)(InvokationArguments) -> {
             return (String)InvokationArguments.getArgumentAt(0, String.class);
@@ -266,14 +276,14 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void getMatchingArtifactUrls_none() throws IOException {
+    public void getMatchingArtifactUrls_none() throws IOException, URISyntaxException {
         doReturn(expectedArtifactRelativePaths).when(clientSpy).getArtifactPathsFromJenkins();
         assertTrue(clientSpy.getMatchingArtifactUrls("").isEmpty());
         assertTrue(clientSpy.getMatchingArtifactUrls("8wefh9aehf9a8hf98ahsd9f8h9ad8hf9").isEmpty());
     }
     
     @Test
-    public void downloadArtifact_throws() throws IOException {
+    public void downloadArtifact_throws() throws IOException, URISyntaxException {
         expectedException.expect(IOException.class);
         String artifactUrl = "artifactUrl";
         File outputFile = mock(File.class);
@@ -282,7 +292,7 @@ public class TestJenkinsClient {
     }
     
     @Test
-    public void downloadArtifact_ok() throws IOException {
+    public void downloadArtifact_ok() throws IOException, URISyntaxException {
         String artifactUrl = "artifactUrl";
         temporaryFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
         doReturn(new ByteArrayInputStream(jobResponse.getBytes())).when(clientSpy).performHttpGet(artifactUrl);

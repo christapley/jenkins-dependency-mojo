@@ -21,6 +21,9 @@ import com.google.gson.JsonParser;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.KeyManagementException;
@@ -59,10 +62,25 @@ public class JenkinsClient {
         pathMatcher = new AntPathMatcher();
     }
 
-    protected String getJobApiJsonUrl() {
-        return String.format("%s/job/%s/%s/api/json", jenkinsUrl, jobName, buildNumber);
+    protected String getJobApiJsonUrl() throws UnsupportedEncodingException {
+        
+        return String.format("%s/job/%s/%s/api/json", 
+                jenkinsUrl, 
+                URLEncoder.encode(jobName, "UTF-8"), 
+                URLEncoder.encode(buildNumber, "UTF-8"));
     }
+    
+    public void ResolveBuildLabelToCurrentNumber() throws IOException, URISyntaxException {
+        String jobApiJsonUrl = getJobApiJsonUrl();
+        InputStream jsonStream = performHttpGet(jobApiJsonUrl);
+        String json = getStringFromInputStream(jsonStream);
+        JsonParser parser = new JsonParser();
+        JsonElement rootElement = parser.parse(json);
 
+        int buildNumberFromJson = rootElement.getAsJsonObject().get("number").getAsInt();
+        this.buildNumber = Integer.toString(buildNumberFromJson);
+    }
+    
     protected String getStringFromInputStream(InputStream inputStream) throws IOException {
         return IOUtils.toString(inputStream, "UTF8");
     }
@@ -85,7 +103,7 @@ public class JenkinsClient {
         }
     }
     
-    protected InputStream performHttpGet(String url) throws IOException {
+    protected InputStream performHttpGet(String url) throws IOException, URISyntaxException {
         HttpClient client = getHttpClient();
         HttpGet request = new HttpGet(url);
         HttpResponse response = client.execute(request);
@@ -95,7 +113,7 @@ public class JenkinsClient {
         throw new IllegalStateException(String.format("%s returned %d", url, response.getStatusLine().getStatusCode()));
     }
 
-    protected List<String> getArtifactPathsFromJenkins() throws IOException {
+    protected List<String> getArtifactPathsFromJenkins() throws IOException, URISyntaxException {
         String url = getJobApiJsonUrl();
         InputStream jsonStream = performHttpGet(url);
         String json = getStringFromInputStream(jsonStream);
@@ -116,11 +134,14 @@ public class JenkinsClient {
         return artifactPaths;
     }
 
-    protected String getUrlForArtifactRelativePath(String artifactRelativePath) {
-        return String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, jobName, buildNumber, artifactRelativePath);
+    protected String getUrlForArtifactRelativePath(String artifactRelativePath) throws UnsupportedEncodingException {
+        return String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, 
+                URLEncoder.encode(jobName, "UTF-8"), 
+                URLEncoder.encode(buildNumber, "UTF-8"), 
+                artifactRelativePath);
     }
 
-    public List<String> getMatchingArtifactUrls(String commaSeparatedArtifactNameMatchers) throws IOException {
+    public List<String> getMatchingArtifactUrls(String commaSeparatedArtifactNameMatchers) throws IOException, URISyntaxException {
 
         List<String> matchingArtifactUrls = new ArrayList<>();
         List<String> matchers = Arrays.asList(commaSeparatedArtifactNameMatchers.split(","));
@@ -137,7 +158,7 @@ public class JenkinsClient {
         return matchingArtifactUrls;
     }
 
-    public void downloadArtifact(String artifactUrl, File outputFile) throws IOException {
+    public void downloadArtifact(String artifactUrl, File outputFile) throws IOException, URISyntaxException {
         InputStream inputStream = performHttpGet(artifactUrl);
         Files.copy(inputStream, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }

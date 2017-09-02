@@ -16,7 +16,11 @@
 package org.tapley.jenkins.maven.dependency.plugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -50,7 +54,15 @@ public abstract class JenkinsPluginAbstractMojo extends AbstractMojo {
     MavenProject project;
     
     JenkinsClient getJenkinsClient(ArtifactItem artifactItem) {
-        return new JenkinsClient(artifactItem.getJenkinsUrl(), artifactItem.getJobName(), artifactItem.getBuildNumber());
+        JenkinsClient jenkinsClient = new JenkinsClient(artifactItem.getJenkinsUrl(), artifactItem.getJobName(), artifactItem.getBuildNumber());
+        if(!StringUtils.isNumeric(artifactItem.getBuildNumber())) {
+            try {
+                jenkinsClient.ResolveBuildLabelToCurrentNumber();
+            } catch(Exception ex) {
+                getLog().warn(String.format("Failed to resolve potential build label '%s' to build number", artifactItem.getBuildNumber()), ex);
+            }
+        }
+        return jenkinsClient;
     }
     
     protected File getOutputDirectoryFullPath(String resolvedOutputDirectory) {
