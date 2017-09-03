@@ -299,4 +299,33 @@ public class TestJenkinsClient {
         clientSpy.downloadArtifact(artifactUrl, temporaryFile);
         assertEquals(jobResponse, FileUtils.readFileToString(temporaryFile));
     }
+    
+    @Test
+    public void ResolveBuildLabelToCurrentNumber_throwsIoE() throws IOException, URISyntaxException {
+        expectedException.expect(IOException.class);
+        String artifactUrl = "artifactUrl";
+        doReturn(artifactUrl).when(clientSpy).getJobApiJsonUrl();
+        doThrow(new IOException("bang")).when(clientSpy).performHttpGet(artifactUrl);
+        clientSpy.ResolveBuildLabelToCurrentNumber();
+    }
+    
+    @Test
+    public void ResolveBuildLabelToCurrentNumber_uriE() throws IOException, URISyntaxException {
+        expectedException.expect(URISyntaxException.class);
+        String artifactUrl = "artifactUrl";
+        doReturn(artifactUrl).when(clientSpy).getJobApiJsonUrl();
+        doThrow(new URISyntaxException(artifactUrl, "badurl")).when(clientSpy).performHttpGet(artifactUrl);
+        clientSpy.ResolveBuildLabelToCurrentNumber();
+    }
+    
+    @Test
+    public void ResolveBuildLabelToCurrentNumber_ok() throws IOException, URISyntaxException {
+        String json = "{\"number\": 123 }";
+        String artifactUrl = "artifactUrl";
+        doReturn(artifactUrl).when(clientSpy).getJobApiJsonUrl();
+        doReturn(new ByteArrayInputStream(json.getBytes())).when(clientSpy).performHttpGet(artifactUrl);
+        clientSpy.ResolveBuildLabelToCurrentNumber();
+        String actualBuildNumber = (String)ReflectionTestUtils.getField(clientSpy, "buildNumber");
+        assertEquals("123", actualBuildNumber);
+    }
 }
