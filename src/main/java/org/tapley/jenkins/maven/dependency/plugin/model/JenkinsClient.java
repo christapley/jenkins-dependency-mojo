@@ -66,8 +66,8 @@ public class JenkinsClient {
         
         return String.format("%s/job/%s/%s/api/json", 
                 jenkinsUrl, 
-                URLEncoder.encode(jobName, "UTF-8"), 
-                URLEncoder.encode(buildNumber, "UTF-8"));
+                URLEncoder.encode(jobName, "UTF-8").replaceAll("\\+", "%20"), 
+                URLEncoder.encode(buildNumber, "UTF-8").replaceAll("\\+", "%20"));
     }
     
     public void ResolveBuildLabelToCurrentNumber() throws IOException, URISyntaxException {
@@ -136,8 +136,8 @@ public class JenkinsClient {
 
     protected String getUrlForArtifactRelativePath(String artifactRelativePath) throws UnsupportedEncodingException {
         return String.format("%s/job/%s/%s/artifact/%s", jenkinsUrl, 
-                URLEncoder.encode(jobName, "UTF-8"), 
-                URLEncoder.encode(buildNumber, "UTF-8"), 
+                URLEncoder.encode(jobName, "UTF-8").replaceAll("\\+", "%20"), 
+                URLEncoder.encode(buildNumber, "UTF-8").replaceAll("\\+", "%20"), 
                 artifactRelativePath);
     }
 

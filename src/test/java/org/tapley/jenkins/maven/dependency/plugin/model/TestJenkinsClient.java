@@ -115,7 +115,7 @@ public class TestJenkinsClient {
     @Test
     public void getJobApiJsonUrl_spaces() throws UnsupportedEncodingException {
         String actualJobName = expectedJobName + " " + expectedJobName;
-        expectedJobName = expectedJobName + "+" + expectedJobName;
+        expectedJobName = expectedJobName + "%20" + expectedJobName;
         ReflectionTestUtils.setField(client, "jobName", actualJobName);
         String actual = client.getJobApiJsonUrl();
         assertEquals(String.format("%s/job/%s/%s/api/json", expectedJenkinsUrl, expectedJobName, expectedBuildNumber), actual);
