@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.christapley</groupId>
     <artifactId>jenkins-dependency-maven-plugin</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.2</version>
     <packaging>maven-plugin</packaging>
     <url>https://github.com/christapley/jenkins-dependency-mojo</url>
     <name>${project.groupId}:${project.artifactId}</name>
